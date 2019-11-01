@@ -17,7 +17,6 @@ class Spider(object):
     def __init__(self):
         ## setup
         # self.base_url = base_url
-
         self.options = Options()
         self.options.add_argument('--headless') # 爬取时隐藏浏览器
         self.driver = webdriver.Chrome(options = self.options)
