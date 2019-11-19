@@ -1,0 +1,44 @@
+create table if not exists tmp.team_list(
+`team_id` string comment '队伍ID',
+`name` string comment '队伍名称',
+primary key (`team_id`)
+)stored as kudu;
+
+create table if not exists tmp.game_record(
+`id` string comment '比赛ID',
+`league` string comment '赛事',
+`data` string comment '日期',
+`time` string comment '时间',
+`host_t` string comment '主队',
+`full` string comment '全场比分',
+`guest_t` string comment '客队',
+`half` string comment '半场比分',
+`asia` string comment '亚盘',
+`total_overunder` string comment '大小盘',
+`flat` string comment '胜平负',
+primary key (id)
+)stored as kudu;
+
+create table if not exists tmp.game_record_url(
+`id` string comment '比赛ID',
+`host_t` string comment '主队主页',
+`game_record` string comment '比赛记录',
+`guest_t` string comment '客队主页',
+`analysis` string comment '比赛分析',
+`asia` string comment '亚盘指数',
+`odds` string comment '欧赔指数',
+`total_overunder` string comment '大小盘指数',
+primary key (id)
+)stored as kudu;
+
+create table if not exists tmp.game_odds(
+`id` string comment '比赛ID',
+`odd_comp` string comment '赔率公司',
+`f_w` string comment '终盘胜赔',
+`f_d` string comment '终盘平赔',
+`f_l` string comment '终盘负赔',
+`o_w` string comment '初盘胜赔',
+`o_d` string comment '初盘平赔',
+`o_l` string comment '初盘负赔',
+primary key (id,odd_comp)
+)stored as kudu;
