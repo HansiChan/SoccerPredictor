@@ -38,7 +38,7 @@ class Spider(object):
         conn = pyodbc.connect(cnxnstr, autocommit=True, timeout=240)
         self.impala_cur = conn.cursor()
 
-        self.dbcon = create_engine('mysql+mysqlconnector://root:123456@localhost:3306/test?charset=utf8')
+        # self.dbcon = create_engine('mysql+mysqlconnector://root:123456@localhost:3306/test?charset=utf8')
 
     # 获取赛季联赛球队名单及球队对应ID
     def get_team_ids(self, season, league):
@@ -52,8 +52,7 @@ class Spider(object):
             data.append([team_id, team_name])
         self.driver.close()
         team_list = pd.DataFrame(data, columns=['队伍ID', '队伍名称'])
-        team_list['team_id'] = team_list['team_id'].astype('int32')
-        print(team_list)
+        self.logger.info(team_list)
         # self.to_sql('test.team_list', team_list)
         self.to_kudu('tmp.team_list', data)
 
@@ -72,7 +71,7 @@ class Spider(object):
                 for x in matches:
                     matche_id = ''
                     url_list = []
-                    if len(str(x.text).split(' ')) in (15, 16, 17):
+                    if len(str(x.text).split(' ')) == 17:
                         league = str(x.text).split(' ')[0]
                         date = str(x.text).split(' ')[1]
                         times = str(x.text).split(' ')[2]
@@ -80,20 +79,9 @@ class Spider(object):
                         full_score = str(x.text).split(' ')[4]
                         guest_team = str(x.text).split(' ')[5]
                         half_score = str(x.text).split(' ')[6]
-                        # 处理05年之前的数据
-                        if len(str(x.text).split(' ')) == 15:
-                            aisa = ''
-                            total_overunder = ''
-                            flat = str(x.text).split(' ')[7]
-                        # 处理13年之前的数据
-                        elif len(str(x.text).split(' ')) == 16:
-                            aisa = ''
-                            total_overunder = str(x.text).split(' ')[7]
-                            flat = str(x.text).split(' ')[8]
-                        else:
-                            aisa = str(x.text).split(' ')[7]
-                            total_overunder = str(x.text).split(' ')[8]
-                            flat = str(x.text).split(' ')[9]
+                        aisa = str(x.text).split(' ')[7]
+                        total_overunder = str(x.text).split(' ')[8]
+                        flat = str(x.text).split(' ')[9]
                         # 爬取网页url
                         if x.find_elements_by_xpath('.//*[@href]'):
                             for y in x.find_elements_by_xpath('.//*[@href]'):
@@ -105,8 +93,6 @@ class Spider(object):
                             [matche_id, league, date, times, host_team, full_score, guest_team, half_score, aisa,
                              total_overunder, flat])
                         ulist.append(url_list)
-                # 模拟翻页
-                # onclick='//a[@onclick="GetTeamSche(19,%s)"]' % (i+1)
                 # 模拟输入并跳转到指定页
                 input = '//input[@type="text" and @name="pageNo" and @id="pageNo"]'
                 self.driver.find_element_by_xpath(input).send_keys(i + 1)
@@ -120,39 +106,47 @@ class Spider(object):
         self.driver.close()
         ddf = pd.DataFrame(data, columns=['ID', '赛事', '日期', '时间', '主队', '全场比分', '客队', '半场比分', '亚盘', '大小盘', '胜平负'])
         udf = pd.DataFrame(ulist, columns=['ID', '主队主页', '比赛记录', '客队主页', '比赛分析', '亚盘指数', '大小盘指数', '欧赔指数'])
-        ddf['ID'] = ddf['ID'].astype('int32')
-        udf['ID'] = udf['ID'].astype('int32')
         # self.to_sql('test.game_record',ddf)
         # self.to_sql('test.game_record_url',udf)
         self.to_kudu('tmp.game_record', data)
         self.to_kudu('tmp.game_record_url', ulist)
 
-    def get_odds(self, game_id):
-        def get_oddList():
-            odds_list =[]
+    """
+    主场 hg：0
+    客场 hg：1
+    """
+
+    def get_odds(self, game_id, hg):
+
+        def get_oddList(arg):
+            selector = Select(self.driver.find_element_by_id("sel_showType"))
+            selector.select_by_visible_text(arg)
+            odds_list = []
             odd_table = self.driver.find_element_by_xpath('//table[@id="oddsList_tab"]')
             odds = odd_table.find_elements_by_xpath('.//tr[.//td//a[@title="主流公司"]]')
             for i in odds:
-                odd_list = []
-                td = i.find_elements_by_xpath('.//td')
-                for t in td:
-                    odd_list.append(t.text)
-                odds_list.append(odd_list[1:5])
+                a = i.find_element_by_xpath('.//a').text
+                span = re.findall(r'\d+\.\d+', i.text)[0:3]
+                span.insert(0, a)
+                odds_list.append(span)
             return odds_list
-        url = 'http://vip.win0168.com/1x2/oddslist/%s.htm' % (game_id)
-        self.driver.get(url)
-        # 终盘
-        final_odd = get_oddList()
-        # 初盘
-        selector = Select(self.driver.find_element_by_id("sel_showType"))
-        selector.select_by_visible_text("初盘")
-        orign_odd = get_oddList()
-        full_odd = []
-        for (f, o) in zip(final_odd, orign_odd):
-            f.insert(0, game_id)
-            full_odd.append(f + o[1:])
-        # print(full_odd)
-        self.to_kudu('tmp.game_odds', full_odd)
+
+        game_list = self.get_game_list(game_id, hg)
+        self.logger.info('共 ' + str(len(game_list)) + ' 条记录')
+        for game_id in game_list:
+            index = game_list.index(game_id)
+            url = 'http://vip.win0168.com/1x2/oddslist/%s.htm' % (game_id)
+            self.logger.info('正在爬取第 ' + str(index + 1) + ' 条记录数据 game_id:' + game_id)
+            self.driver.get(url)
+            # 初盘
+            orign_odd = get_oddList("初盘")
+            # 终盘
+            final_odd = get_oddList("即时盘")
+            full_odd = []
+            for f, o in zip(final_odd, orign_odd):
+                f.insert(0, game_id)
+                full_odd.append(f + o[1:])
+            self.to_kudu('tmp.game_odds', full_odd)
         self.driver.close()
 
     def to_sql(self, table_name, data):
@@ -168,9 +162,25 @@ class Spider(object):
             sql = 'upsert into ' + table_name + ' values(' + d[:-1] + ')'
             self.impala_cur.execute(sql)
 
+    def get_game_list(self, team_id, hg):
+        game_list = []
+        sql = "select distinct name from tmp.team_list where team_id='%s'" % (team_id)
+        rows = self.impala_cur.execute(sql)
+        team_name = rows.fetchall()[0][0]
+        # 主场or客场
+        if hg == 0:
+            sql = "select id from tmp.game_record where host_t='%s'" % (team_name)
+        else:
+            sql = "select id from tmp.game_record where guest_t='%s'" % (team_name)
+        rows = self.impala_cur.execute(sql)
+        for row in rows.fetchall():
+            game_list.append(row[0])
+        return game_list
+
 
 if __name__ == "__main__":
     spider = Spider()
     # spider.get_team_ids('2019-2020', '36')
     # spider.get_game_record(19, 54)
-    spider.get_odds('1646984')
+    # spider.get_odds('1646984')
+    spider.get_odds('19', 0)
