@@ -42,3 +42,15 @@ create table if not exists tmp.game_odds(
 `o_l` string comment '初盘负赔',
 primary key (id,odd_comp)
 )stored as kudu;
+
+create table if not exists tmp.game_overunder(
+`id` string comment '比赛ID',
+`odd_comp` string comment '赔率公司',
+`o_o` string comment '初盘大',
+`origin` string comment '初盘',
+`o_u` string comment '初盘小',
+`f_o` string comment '终盘大',
+`final` string comment '终盘',
+`f_u` string comment '终盘小',
+primary key (id,odd_comp)
+)stored as kudu;
