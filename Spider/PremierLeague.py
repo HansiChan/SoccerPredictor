@@ -16,8 +16,6 @@ from sqlalchemy import create_engine
 class Spider(object):
 
     def __init__(self):
-        ## setup
-        # self.base_url = base_url
         self.options = Options()
         self.options.add_argument('--headless')  # 爬取时隐藏浏览器
         self.driver = webdriver.Chrome(options=self.options)
@@ -168,7 +166,7 @@ class Spider(object):
                     odd.insert(0, gid)
                     if len(odd) == 8:
                         odds_list.append(odd)
-            self.to_kudu('tmp.game_overunder',odds_list)
+            self.to_kudu('tmp.game_overunder', odds_list)
         self.driver.close()
 
     # 保存到mysql

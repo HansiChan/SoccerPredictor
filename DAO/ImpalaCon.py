@@ -35,6 +35,8 @@ class ImpalaCon(object):
         for data in fetch_data:
             d = []
             for i in data:
+                if i is not None and '/' in i:
+                    i = (float(i.split('/')[0]) + float(i.split('/')[1])) / 2
                 d.append(i)
             d_list.append(d)
         return d_list
