@@ -136,7 +136,7 @@ class Predictor(object):
         :return: 赔率数据DataFrame
         """
         flag = table_name.split('.')[1].split('_')[1]
-        # 提取top10赔率公司(表名)
+        # 提取top10赔率公司
         labels = []
         sql = 'select odd_comp from %s group by odd_comp order by count(*) desc limit 10' % table_name
         top10 = self.cur.get_data_list(sql)
