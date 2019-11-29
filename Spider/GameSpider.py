@@ -13,8 +13,10 @@ from DAO.ImpalaCon import ImpalaCon
 from sqlalchemy import create_engine
 
 
-class Spider(object):
-
+class GameSpider(object):
+    """
+    爬虫程序，负责从网页爬取训练数据
+    """
     def __init__(self):
         self.options = Options()
         self.options.add_argument('--headless')  # 爬取时隐藏浏览器
@@ -34,11 +36,12 @@ class Spider(object):
 
         self.cur = ImpalaCon()
 
-        # mysql连接信息
-        # self.dbcon = create_engine('mysql+mysqlconnector://root:123456@localhost:3306/test?charset=utf8')
-
-    # 获取赛季联赛球队名单及球队对应ID
     def get_team_ids(self, season, league):
+        """
+        获取赛季联赛球队名单及球队对应ID
+        :param season: 赛季（2019-2020）
+        :param league: 联赛编号（36）
+        """
         main_url = 'http://zq.win007.com/cn/TeamHeadPage/%s/%s.html' % (season, league)
         self.driver.get(main_url)
         teams = self.driver.find_elements_by_xpath("//td[@background='/Images/photo_s_2.gif' and @class='name01']")
@@ -50,11 +53,15 @@ class Spider(object):
         self.driver.close()
         team_list = pd.DataFrame(data, columns=['队伍ID', '队伍名称'])
         self.logger.info(team_list)
-        # self.to_sql('test.team_list', team_list)
         self.to_kudu('tmp.team_list', data)
 
-    # 获取球队历史比赛数据
+
     def get_game_record(self, teamid, page_num):
+        """
+        获取球队历史比赛数据
+        :param teamid: 队伍ID
+        :param page_num: 爬取的页数范围（最大54）
+        """
         url = 'http://info.win0168.com/cn/team/TeamSche/%s.html' % teamid
         data = []
         ulist = []
@@ -103,14 +110,15 @@ class Spider(object):
         self.driver.close()
         ddf = pd.DataFrame(data, columns=['ID', '赛事', '日期', '时间', '主队', '全场比分', '客队', '半场比分', '亚盘', '大小盘', '胜平负'])
         udf = pd.DataFrame(ulist, columns=['ID', '主队主页', '比赛记录', '客队主页', '比赛分析', '亚盘指数', '大小盘指数', '欧赔指数'])
-        # self.to_sql('test.game_record',ddf)
-        # self.to_sql('test.game_record_url',udf)
         self.to_kudu('tmp.game_record', data)
         self.to_kudu('tmp.game_record_url', ulist)
 
-    # 获取主/客场赔率数据（主场：0/客场：1）
     def get_odds(self, game_id, hg):
-
+        """
+        获取主/客场赔率数据
+        :param game_id: 队伍ID
+        :param hg: 0：主场，1：客场
+        """
         def get_oddList(arg):
             selector = Select(self.driver.find_element_by_id("sel_showType"))
             selector.select_by_visible_text(arg)
@@ -142,8 +150,12 @@ class Spider(object):
             self.to_kudu('tmp.game_odds', full_odd)
         self.driver.close()
 
-    # 获取大小球赔率数据
     def get_overunder(self, game_id, hg):
+        """
+        获取大小球赔率数据
+        :param game_id: 队伍ID
+        :param hg: 0：主场，1：客场
+        """
         game_list = self.cur.get_game_list(game_id, hg)
         self.logger.info('共 ' + str(len(game_list)) + ' 条记录')
         for gid in game_list:
@@ -169,14 +181,12 @@ class Spider(object):
             self.to_kudu('tmp.game_overunder', odds_list)
         self.driver.close()
 
-    # 保存到mysql
-    def to_sql(self, table_name, data):
-        table = table_name.split('.')[0]
-        db = table_name.split('.')[1]
-        data.to_sql(table, schema=db, con=self.dbcon, if_exists='replace', index=False)
-
-    # 保存到kudu
     def to_kudu(self, table_name, data):
+        """
+        保存到kudu
+        :param table_name: 表名（tmp.game_record）
+        :param data: 数据List
+        """
         for row in data:
             d = ''
             for l in row:
@@ -186,7 +196,7 @@ class Spider(object):
 
 
 if __name__ == "__main__":
-    spider = Spider()
+    spider = GameSpider()
     # spider.get_team_ids('2019-2020', '36')
     # spider.get_game_record(19, 54)
     # spider.get_odds('1646984')

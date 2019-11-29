@@ -6,15 +6,21 @@ from sklearn.model_selection import train_test_split
 from DAO.ImpalaCon import ImpalaCon
 
 
-class Predict(object):
-
+class Predictor(object):
+    """
+    基于XGBoost的机器学习预测算法，进行模型的训练和保存
+    """
     def __init__(self):
         self.cur = ImpalaCon()
         self.flat_parse = "case when flat='胜' then '3' when flat='平' then '1' when flat='负' then '0' end"
         self.overunder_parse = "case when total_overunder='小' then '0' when total_overunder='大' then '1' end"
 
-    # 训练胜负模型(队伍ID，主客场)
     def train_flat(self, team_id, hg):
+        """
+        训练胜负模型
+        :param team_id: 队伍ID
+        :param hg: 0：主场，1：客场
+        """
         game_list = self.list2str(self.cur.get_game_list(team_id, hg))  # 获取所有比赛ID
         odd_df = self.get_label_odds(game_list, 'tmp.game_odds')  # 取出欧赔
         result_df = self.get_result(game_list)  # 取出赛果
@@ -25,8 +31,12 @@ class Predict(object):
         train.drop(['flat', 'overunder'], axis=1, inplace=True)
         self.save_model(train, target, team_id + '_' + str(hg) + '_flat')
 
-    # 训练大小模型(队伍ID，主客场)
     def train_ou(self, team_id, hg):
+        """
+        训练大小模型
+        :param team_id: 队伍ID
+        :param hg: 0：主场，1：客场
+        """
         game_list = self.list2str(self.cur.get_game_list(team_id, hg))  # 获取所有比赛ID
         odd_df = self.get_label_odds(game_list, 'tmp.game_odds')  # 取出欧赔
         ou_df = self.get_label_odds(game_list, 'tmp.game_overunder')  # 取出大小盘赔
@@ -38,9 +48,14 @@ class Predict(object):
         train.drop(['flat', 'overunder'], axis=1, inplace=True)
         self.save_model(train, target, team_id + '_' + str(hg) + '_overunder')
 
-    # 保存预测模型(元数据,结果,类型)
     @staticmethod
     def save_model(train, target, args):
+        """
+        保存预测模型
+        :param train: 元数据DF
+        :param target: 结果集DF
+        :param args: 类型(19_0_flat：team_id,主客场,预测类型)
+        """
         x_train, x_test, y_train, y_test = train_test_split(train.values, target, test_size=0.6, random_state=2)
         model = xgb.XGBClassifier(max_depth=2, n_estimators=100, learn_rate=0.1)
         model.fit(x_train, y_train)
@@ -75,8 +90,13 @@ class Predict(object):
         for i in preds:
             print(i)
 
-    # 将List转为DataFrame(sql)
     def get_data_df(self, sql, flag):
+        """
+        将结果List转为DataFrame
+        :param sql: SQL语句
+        :param flag: 预测类型（flat）
+        :return: 结果DataFrame
+        """
         data_list = self.cur.get_data_list(sql)
         data_df = pd.DataFrame(data_list, columns=['id', 'company', 'f1', 'f2', 'f3', 'o1', 'o2', 'o3'])
         data_piv = pd.DataFrame(
@@ -85,8 +105,12 @@ class Predict(object):
         data_piv.columns = col_lis
         return data_piv
 
-    # 取出赛果(比赛ID)
     def get_result(self, game_list):
+        """
+        取出赛果
+        :param game_list: 比赛ID
+        :return: 比赛结果DataFrame
+        """
         sql = "select distinct id,%s,%s  from tmp.game_record where id in (%s)" \
               % (self.flat_parse, self.overunder_parse, game_list)
         result_list = self.cur.get_data_list(sql)
@@ -94,14 +118,23 @@ class Predict(object):
         result_df.set_index(['id'], inplace=True)
         return result_df
 
-    # 获取比赛List(ID数组)
     @staticmethod
     def list2str(oList):
+        """
+        获取比赛List
+        :param oList: ID数组
+        :return: 拼接后的ID字符串
+        """
         games = ",".join(["'" + i + "'" for i in oList])
         return games
 
-    # 取出标签的赔率数据
     def get_label_odds(self, game_list, table_name):
+        """
+        取出标签的赔率数据
+        :param game_list: 比赛List
+        :param table_name: 表名（tmp.game_odds）
+        :return: 赔率数据DataFrame
+        """
         flag = table_name.split('.')[1].split('_')[1]
         # 提取top10赔率公司(表名)
         labels = []
@@ -118,7 +151,7 @@ class Predict(object):
 
 
 if __name__ == '__main__':
-    predict = Predict()
+    predict = Predictor()
     # predict.train_flat('19', 0)
     # predict.train_ou('19', 0)
     # predict.predict_flat()
