@@ -3,14 +3,14 @@ import logging
 import sys
 import os
 
-# 添加项目根目录到路径
+# Add the project root directory to the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from config import get_database_connection_string, DATABASE
 
 
 class ImpalaCon(object):
     """
-    用于操作数据库，进行增删改查
+    Used to operate the database for CRUD operations
     """
     def __init__(self):
         self.logger = logging.getLogger(__name__)
@@ -25,17 +25,17 @@ class ImpalaCon(object):
             cnxnstr = get_database_connection_string()
             conn = pyodbc.connect(cnxnstr, autocommit=True, timeout=DATABASE['TIMEOUT'])
             self.impala_cur = conn.cursor()
-            self.logger.info("成功连接到Impala数据库")
+            self.logger.info("Successfully connected to Impala database")
         except Exception as e:
-            self.logger.error(f"连接数据库失败: {str(e)}")
+            self.logger.error(f"Failed to connect to database: {str(e)}")
             raise
 
     def get_game_list(self, team_id, hg):
         """
-        获取主/客场比赛记录
-        :param team_id: 队伍ID
-        :param hg: 0：主场，1：客场
-        :return: 比赛List
+        Get home/away game records
+        :param team_id: Team ID
+        :param hg: 0: home, 1: away
+        :return: Game List
         """
         try:
             game_list = []
@@ -43,11 +43,11 @@ class ImpalaCon(object):
             rows = self.impala_cur.execute(sql, (team_id,))
             results = rows.fetchall()
             if not results:
-                self.logger.warning(f"未找到队伍ID为 {team_id} 的数据")
+                self.logger.warning(f"No data found for team ID {team_id}")
                 return game_list
             team_name = results[0][0]
-            # 主场or客场
-            field_type = "主场" if hg == 0 else "客场"
+            # Home or away
+            field_type = "Home" if hg == 0 else "Away"
             if hg == 0:
                 sql = "select id from tmp.game_record where host_t=?"
             else:
@@ -55,32 +55,38 @@ class ImpalaCon(object):
             rows = self.impala_cur.execute(sql, (team_name,))
             for row in rows.fetchall():
                 game_list.append(row[0])
-            self.logger.info(f"获取到 {team_name} 的 {field_type} 比赛记录: {len(game_list)} 场")
+            self.logger.info(f"Retrieved {len(game_list)} {field_type} game records for {team_name}")
             return game_list
         except Exception as e:
-            self.logger.error(f"获取比赛列表失败: {str(e)}")
+            self.logger.error(f"Failed to get game list: {str(e)}")
             raise
 
-    def save(self, sql):
+    def save(self, sql, params=None):
         """
-        执行sql，无返回值，用于DDL操作
-        :param sql: 要执行的sql语句
+        Execute sql, no return value, for DDL operations
+        :param sql: The sql statement to be executed
         """
         try:
-            self.impala_cur.execute(sql)
-            self.logger.debug(f"成功执行SQL: {sql[:100]}...")
+            if params:
+                self.impala_cur.execute(sql, params)
+            else:
+                self.impala_cur.execute(sql)
+            self.logger.debug(f"Successfully executed SQL: {sql[:100]}...")
         except Exception as e:
-            self.logger.error(f"执行SQL失败: {str(e)}, SQL: {sql[:100]}...")
+            self.logger.error(f"Failed to execute SQL: {str(e)}, SQL: {sql[:100]}...")
             raise
 
-    def get_data_list(self, arg):
+    def get_data_list(self, sql, params=None):
         """
-        执行Sql并返回结果List
-        :param arg: 要执行的sql语句
-        :return: 返回结果List
+        Execute Sql and return the result List
+        :param sql: The sql statement to be executed
+        :return: Return result List
         """
         try:
-            fetches = self.impala_cur.execute(str(arg))
+            if params:
+                fetches = self.impala_cur.execute(sql, params)
+            else:
+                fetches = self.impala_cur.execute(sql)
             fetch_data = fetches.fetchall()
             d_list = []
             for data in fetch_data:
@@ -90,11 +96,11 @@ class ImpalaCon(object):
                         try:
                             i = (float(i.split('/')[0]) + float(i.split('/')[1])) / 2
                         except (ValueError, IndexError):
-                            pass  # 保持原值
+                            pass  # Keep original value
                     d.append(i)
                 d_list.append(d)
-            self.logger.debug(f"查询返回 {len(d_list)} 条记录")
+            self.logger.debug(f"Query returned {len(d_list)} records")
             return d_list
         except Exception as e:
-            self.logger.error(f"查询数据失败: {str(e)}, SQL: {str(arg)[:100]}...")
+            self.logger.error(f"Failed to query data: {str(e)}, SQL: {str(sql)[:100]}...")
             raise

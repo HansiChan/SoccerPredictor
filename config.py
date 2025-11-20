@@ -1,10 +1,10 @@
 # coding=utf-8
 """
-配置文件 - 集中管理所有配置参数
+Configuration file - centralize all configuration parameters
 """
 import os
 
-# 数据库配置
+# Database configuration
 DATABASE = {
     'DSN': os.getenv('IMPALA_DSN', 'Sample Cloudera Impala DSN'),
     'HOST': os.getenv('IMPALA_HOST', '192.168.3.191'),
@@ -16,7 +16,7 @@ DATABASE = {
     'TIMEOUT': int(os.getenv('IMPALA_TIMEOUT', '240'))
 }
 
-# 数据库表名
+# Database table names
 TABLES = {
     'TEAM_LIST': 'tmp.team_list',
     'GAME_RECORD': 'tmp.game_record',
@@ -25,7 +25,7 @@ TABLES = {
     'GAME_OVERUNDER': 'tmp.game_overunder'
 }
 
-# 模型配置
+# Model configuration
 MODEL = {
     'DIR': os.path.join(os.path.dirname(__file__), 'Models'),
     'TEST_SIZE': float(os.getenv('MODEL_TEST_SIZE', '0.6')),
@@ -35,14 +35,14 @@ MODEL = {
     'LEARNING_RATE': float(os.getenv('MODEL_LEARNING_RATE', '0.1'))
 }
 
-# 爬虫配置
+# Spider configuration
 SPIDER = {
     'HEADLESS': os.getenv('SPIDER_HEADLESS', 'True').lower() == 'true',
     'IMPLICIT_WAIT': int(os.getenv('SPIDER_IMPLICIT_WAIT', '30')),
     'PAGE_LOAD_TIMEOUT': int(os.getenv('SPIDER_PAGE_LOAD_TIMEOUT', '30'))
 }
 
-# 日志配置
+# Logging configuration
 LOGGING = {
     'LEVEL': os.getenv('LOG_LEVEL', 'INFO'),
     'FORMAT': os.getenv('LOG_FORMAT', '%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -50,8 +50,8 @@ LOGGING = {
 
 def get_database_connection_string():
     """
-    生成数据库连接字符串
-    :return: 连接字符串
+    Generate database connection string
+    :return: Connection string
     """
     return (f"DSN={DATABASE['DSN']};"
             f"HOST={DATABASE['HOST']};"

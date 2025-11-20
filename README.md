@@ -1,82 +1,80 @@
 # SoccerPredictor
 A goals prediction model based on Big-data and machine learning.
 
-基于大数据和机器学习的足球比赛预测模型。
+## Project Introduction
 
-## 项目简介
+SoccerPredictor is a football match prediction system based on the XGBoost machine learning algorithm, which can predict the outcome of the match and the over/under result.
 
-SoccerPredictor 是一个基于 XGBoost 机器学习算法的足球比赛预测系统，可以预测比赛胜负和大小球结果。
+## Main Functions
 
-## 主要功能
+- **Data Collection**: Crawl match data and odds information from sports websites
+- **Model Training**: Train prediction models for wins and losses and over/under based on historical data
+- **Result Prediction**: Use trained models to predict future matches
+- **Data Storage**: Support Impala/Kudu database storage
 
-- **数据采集**：从体育网站爬取比赛数据、赔率信息
-- **模型训练**：基于历史数据训练胜负预测和大小球预测模型
-- **结果预测**：使用训练好的模型对未来比赛进行预测
-- **数据存储**：支持 Impala/Kudu 数据库存储
-
-## 项目结构
+## Project Structure
 
 ```
 SoccerPredictor/
-├── DAO/                    # 数据访问层
-│   └── ImpalaCon.py       # Impala/Kudu 数据库连接
-├── Spider/                 # 网络爬虫
-│   └── GameSpider.py      # 比赛数据爬取
-├── XGBoost/               # 机器学习模型
-│   └── Predictor.py       # 模型训练与预测
-├── Models/                # 预训练模型存储目录
-├── SQL/                   # 数据库表结构
-│   └── DDL_SQL           # 建表语句
-├── config.py              # 配置文件
-├── requirements.txt       # 依赖包列表
-└── README.md             # 项目说明
+├── DAO/                    # Data Access Layer
+│   └── ImpalaCon.py       # Impala/Kudu database connection
+├── Spider/                 # Web Crawler
+│   └── GameSpider.py      # Match data crawling
+├── XGBoost/               # Machine Learning Model
+│   └── Predictor.py       # Model training and prediction
+├── Models/                # Pre-trained model storage directory
+├── SQL/                   # Database table structure
+│   └── DDL_SQL           # Table creation statement
+├── config.py              # Configuration file
+├── requirements.txt       # List of dependent packages
+└── README.md             # Project description
 ```
 
-## 代码优化说明（2025-11）
+## Code Optimization Description (2025-11)
 
-本次优化主要包括以下方面：
+This optimization mainly includes the following aspects:
 
-### 1. 安全性改进
-- ✅ **修复 SQL 注入漏洞**：使用参数化查询替代字符串拼接
-- ✅ **表名白名单验证**：防止非法表名注入
-- ✅ **输入验证**：添加数据类型和边界检查
+### 1. Security Improvements
+- ✅ **Fixed SQL injection vulnerability**: Use parameterized queries instead of string concatenation
+- ✅ **Table name whitelist verification**: Prevent illegal table name injection
+- ✅ **Input validation**: Add data type and boundary checks
 
-### 2. 兼容性改进
-- ✅ **跨平台路径支持**：移除硬编码的 Windows 路径，使用 `os.path.join()`
-- ✅ **更新 Selenium 4 API**：替换已弃用的 `find_element_by_*` 方法
-- ✅ **环境变量配置**：支持通过环境变量配置数据库连接
+### 2. Compatibility Improvements
+- ✅ **Cross-platform path support**: Removed hard-coded Windows paths and used `os.path.join()`
+- ✅ **Updated Selenium 4 API**: Replaced the deprecated `find_element_by_*` method
+- ✅ **Environment variable configuration**: Support for configuring database connections through environment variables
 
-### 3. 代码质量改进
-- ✅ **完善日志系统**：为所有模块添加详细的日志记录
-- ✅ **统一错误处理**：使用 try-except 捕获并记录异常
-- ✅ **修复函数参数 bug**：修正 `get_data_df()` 缺失参数问题
-- ✅ **代码重构**：提取 `get_top10()` 方法，减少重复代码
+### 3. Code Quality Improvements
+- ✅ **Improved logging system**: Added detailed logging for all modules
+- ✅ **Unified error handling**: Use try-except to catch and record exceptions
+- ✅ **Fixed function parameter bug**: Fixed the missing parameter issue in `get_data_df()`
+- ✅ **Code refactoring**: Extracted the `get_top10()` method to reduce duplicate code
 
-### 4. 性能优化
-- ✅ **优化循环效率**：使用 `enumerate()` 替代 `list.index()`，避免 O(n²) 复杂度
-- ✅ **优化字符串操作**：使用 `join()` 替代循环拼接
-- ✅ **减少重复计算**：缓存 `split()` 结果，避免重复调用
+### 4. Performance Optimization
+- ✅ **Optimized loop efficiency**: Use `enumerate()` instead of `list.index()` to avoid O(n²) complexity
+- ✅ **Optimized string operations**: Use `join()` instead of loop concatenation
+- ✅ **Reduced redundant calculations**: Cached `split()` results to avoid repeated calls
 
-### 5. 配置管理
-- ✅ **集中配置管理**：新增 `config.py` 统一管理所有配置参数
-- ✅ **支持环境变量**：数据库连接、模型参数等可通过环境变量配置
-- ✅ **参数化模型超参数**：便于调优和实验
+### 5. Configuration Management
+- ✅ **Centralized configuration management**: Added `config.py` to manage all configuration parameters uniformly
+- ✅ **Support for environment variables**: Database connection, model parameters, etc. can be configured through environment variables
+- ✅ **Parameterized model hyperparameters**: Facilitates tuning and experimentation
 
-### 6. 代码清理
-- ✅ **删除未使用文件**：移除空文件和无关示例代码
-- ✅ **添加依赖列表**：创建 `requirements.txt` 便于环境搭建
+### 6. Code Cleanup
+- ✅ **Deleted unused files**: Removed empty files and irrelevant sample code
+- ✅ **Added dependency list**: Created `requirements.txt` to facilitate environment setup
 
-## 安装与使用
+## Installation and Use
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 配置数据库
+### 2. Configure the database
 
-编辑 `config.py` 或设置环境变量：
+Edit `config.py` or set environment variables:
 
 ```bash
 export IMPALA_HOST=your_host
@@ -85,67 +83,67 @@ export IMPALA_UID=your_username
 export IMPALA_PWD=your_password
 ```
 
-### 3. 数据采集
+### 3. Data Collection
 
 ```python
 from Spider.GameSpider import GameSpider
 
 spider = GameSpider()
-# 获取球队列表
+# Get team list
 spider.get_team_ids('2019-2020', '36')
-# 获取比赛记录
+# Get game records
 spider.get_game_record('19', 54)
-# 获取赔率数据
+# Get odds data
 spider.get_odds('19', 0)
 spider.get_overunder('19', 0)
 ```
 
-### 4. 模型训练
+### 4. Model Training
 
 ```python
 from XGBoost.Predictor import Predictor
 
 predictor = Predictor()
-# 训练胜负模型
+# Train the win/loss model
 predictor.train_flat('19', 0)
-# 训练大小球模型
+# Train the over/under model
 predictor.train_ou('19', 0)
 ```
 
-### 5. 预测
+### 5. Prediction
 
 ```python
-# 预测胜负
+# Predict win/loss
 predictor.predict_flat()
-# 预测大小球
+# Predict over/under
 predictor.predict_overunder()
 ```
 
-## 配置参数说明
+## Configuration Parameter Description
 
-主要配置参数在 `config.py` 中：
+The main configuration parameters are in `config.py`:
 
-- **DATABASE**: 数据库连接配置
-- **TABLES**: 数据表名称
-- **MODEL**: 模型超参数（测试集比例、树深度、学习率等）
-- **SPIDER**: 爬虫配置（无头模式、超时设置等）
-- **LOGGING**: 日志级别和格式
+- **DATABASE**: Database connection configuration
+- **TABLES**: Data table names
+- **MODEL**: Model hyperparameters (test set ratio, tree depth, learning rate, etc.)
+- **SPIDER**: Crawler configuration (headless mode, timeout settings, etc.)
+- **LOGGING**: Log level and format
 
-## 技术栈
+## Technology Stack
 
 - **Python 3.x**
-- **XGBoost**: 梯度提升树算法
-- **Pandas/Numpy**: 数据处理
-- **Selenium**: Web 爬虫
-- **PyODBC**: 数据库连接
-- **Impala/Kudu**: 大数据存储
+- **XGBoost**: Gradient boosting tree algorithm
+- **Pandas/Numpy**: Data processing
+- **Selenium**: Web crawler
+- **PyODBC**: Database connection
+- **Impala/Kudu**: Big data storage
 
-## 注意事项
+## Notes
 
-1. 需要安装 Chrome 浏览器和 ChromeDriver
-2. 确保网络可访问目标体育网站
-3. 数据库需提前创建相应表结构（参考 SQL/DDL_SQL）
-4. 模型训练需要足够的历史数据
+1. Chrome browser and ChromeDriver need to be installed
+2. Make sure the network can access the target sports website
+3. The database needs to create the corresponding table structure in advance (see SQL/DDL_SQL)
+4. Model training requires sufficient historical data
 
 ## License
 

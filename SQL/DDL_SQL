@@ -1,56 +1,56 @@
-create table if not exists tmp.team_list(
-`team_id` string comment '队伍ID',
-`name` string comment '队伍名称',
-primary key (`team_id`)
-)stored as kudu;
+CREATE TABLE IF NOT EXISTS tmp.team_list (
+    `team_id` STRING COMMENT 'Team ID',
+    `name` STRING COMMENT 'Team Name',
+    PRIMARY KEY (`team_id`)
+) STORED AS KUDU;
 
-create table if not exists tmp.game_record(
-`id` string comment '比赛ID',
-`league` string comment '赛事',
-`data` string comment '日期',
-`time` string comment '时间',
-`host_t` string comment '主队',
-`full` string comment '全场比分',
-`guest_t` string comment '客队',
-`half` string comment '半场比分',
-`asia` string comment '亚盘',
-`total_overunder` string comment '大小盘',
-`flat` string comment '胜平负',
-primary key (id)
-)stored as kudu;
+CREATE TABLE IF NOT EXISTS tmp.game_record (
+    `id` STRING COMMENT 'Game ID',
+    `league` STRING COMMENT 'League',
+    `game_date` STRING COMMENT 'Date',
+    `game_time` STRING COMMENT 'Time',
+    `host_team` STRING COMMENT 'Host Team',
+    `full_score` STRING COMMENT 'Full Score',
+    `guest_team` STRING COMMENT 'Guest Team',
+    `half_score` STRING COMMENT 'Half Score',
+    `asia_odds` STRING COMMENT 'Asia Odds',
+    `total_overunder` STRING COMMENT 'Over/Under',
+    `win_draw_lose` STRING COMMENT 'Win/Draw/Lose',
+    PRIMARY KEY (id)
+) STORED AS KUDU;
 
-create table if not exists tmp.game_record_url(
-`id` string comment '比赛ID',
-`host_t` string comment '主队主页',
-`game_record` string comment '比赛记录',
-`guest_t` string comment '客队主页',
-`analysis` string comment '比赛分析',
-`asia` string comment '亚盘指数',
-`odds` string comment '欧赔指数',
-`total_overunder` string comment '大小盘指数',
-primary key (id)
-)stored as kudu;
+CREATE TABLE IF NOT EXISTS tmp.game_record_url (
+    `id` STRING COMMENT 'Game ID',
+    `host_homepage` STRING COMMENT 'Host Team Homepage',
+    `game_record_page` STRING COMMENT 'Game Record Page',
+    `guest_homepage` STRING COMMENT 'Guest Team Homepage',
+    `analysis_page` STRING COMMENT 'Game Analysis Page',
+    `asia_odds_page` STRING COMMENT 'Asia Odds Page',
+    `euro_odds_page` STRING COMMENT 'Euro Odds Page',
+    `overunder_odds_page` STRING COMMENT 'Over/Under Odds Page',
+    PRIMARY KEY (id)
+) STORED AS KUDU;
 
-create table if not exists tmp.game_odds(
-`id` string comment '比赛ID',
-`odd_comp` string comment '赔率公司',
-`f_w` string comment '终盘胜赔',
-`f_d` string comment '终盘平赔',
-`f_l` string comment '终盘负赔',
-`o_w` string comment '初盘胜赔',
-`o_d` string comment '初盘平赔',
-`o_l` string comment '初盘负赔',
-primary key (id,odd_comp)
-)stored as kudu;
+CREATE TABLE IF NOT EXISTS tmp.game_odds (
+    `id` STRING COMMENT 'Game ID',
+    `odds_company` STRING COMMENT 'Odds Company',
+    `final_win` STRING COMMENT 'Final Win Odds',
+    `final_draw` STRING COMMENT 'Final Draw Odds',
+    `final_lose` STRING COMMENT 'Final Lose Odds',
+    `initial_win` STRING COMMENT 'Initial Win Odds',
+    `initial_draw` STRING COMMENT 'Initial Draw Odds',
+    `initial_lose` STRING COMMENT 'Initial Lose Odds',
+    PRIMARY KEY (id, odds_company)
+) STORED AS KUDU;
 
-create table if not exists tmp.game_overunder(
-`id` string comment '比赛ID',
-`odd_comp` string comment '赔率公司',
-`o_o` string comment '初盘大',
-`origin` string comment '初盘',
-`o_u` string comment '初盘小',
-`f_o` string comment '终盘大',
-`final` string comment '终盘',
-`f_u` string comment '终盘小',
-primary key (id,odd_comp)
-)stored as kudu;
+CREATE TABLE IF NOT EXISTS tmp.game_overunder (
+    `id` STRING COMMENT 'Game ID',
+    `odds_company` STRING COMMENT 'Odds Company',
+    `initial_over` STRING COMMENT 'Initial Over Odds',
+    `initial_line` STRING COMMENT 'Initial Line',
+    `initial_under` STRING COMMENT 'Initial Under Odds',
+    `final_over` STRING COMMENT 'Final Over Odds',
+    `final_line` STRING COMMENT 'Final Line',
+    `final_under` STRING COMMENT 'Final Under Odds',
+    PRIMARY KEY (id, odds_company)
+) STORED AS KUDU;

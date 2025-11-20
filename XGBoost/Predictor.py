@@ -7,7 +7,7 @@ import sys
 import logging
 from sklearn.model_selection import train_test_split
 
-# 添加项目根目录到路径
+# Add the project root directory to the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from DAO.ImpalaCon import ImpalaCon
 from config import MODEL, TABLES
@@ -15,7 +15,7 @@ from config import MODEL, TABLES
 
 class Predictor(object):
     """
-    基于XGBoost的机器学习预测算法，进行模型的训练和保存
+    Machine learning prediction algorithm based on XGBoost for model training and saving
     """
     def __init__(self):
         self.logger = logging.getLogger(__name__)
@@ -27,81 +27,81 @@ class Predictor(object):
             self.logger.setLevel(logging.INFO)
 
         self.cur = ImpalaCon()
-        self.flat_parse = "case when flat='胜' then '3' when flat='平' then '1' when flat='负' then '0' end"
-        self.overunder_parse = "case when total_overunder='小' then '0' when total_overunder='大' then '1' end"
-        # 使用配置文件中的模型目录
+        self.flat_parse = "case when flat='Win' then '3' when flat='Draw' then '1' when flat='Loss' then '0' end"
+        self.overunder_parse = "case when total_overunder='Under' then '0' when total_overunder='Over' then '1' end"
+        # Use the model directory from the configuration file
         self.model_dir = MODEL['DIR']
-        self.logger.info(f"模型目录: {self.model_dir}")
+        self.logger.info(f"Model directory: {self.model_dir}")
 
     def train_flat(self, team_id, hg):
         """
-        训练胜负模型
-        :param team_id: 队伍ID
-        :param hg: 0：主场，1：客场
+        Train the win/loss model
+        :param team_id: Team ID
+        :param hg: 0: home, 1: away
         """
         try:
-            self.logger.info(f"开始训练胜负模型 - 队伍ID: {team_id}, 主客场: {'主场' if hg == 0 else '客场'}")
-            game_list = self.list2str(self.cur.get_game_list(team_id, hg))  # 获取所有比赛ID
-            odd_df = self.get_label_odds(game_list, 'tmp.game_odds')  # 取出欧赔
-            result_df = self.get_result(game_list)  # 取出赛果
-            train = odd_df.join(result_df)  # 整合赔率和赛果
+            self.logger.info(f"Start training win/loss model - Team ID: {team_id}, Home/Away: {'Home' if hg == 0 else 'Away'}")
+            game_list = self.list2str(self.cur.get_game_list(team_id, hg))  # Get all game IDs
+            odd_df = self.get_label_odds(game_list, 'tmp.game_odds')  # Get European odds
+            result_df = self.get_result(game_list)  # Get game results
+            train = odd_df.join(result_df)  # Integrate odds and results
             rows_before = len(train)
-            train.dropna(axis=0, how='any', inplace=True)   # 处理空值
+            train.dropna(axis=0, how='any', inplace=True)   # Handle null values
             rows_after = len(train)
             if rows_before > rows_after:
-                self.logger.info(f"删除了 {rows_before - rows_after} 行包含空值的数据")
+                self.logger.info(f"Deleted {rows_before - rows_after} rows containing null values")
 
             target = train['flat']
             train.drop(['flat', 'overunder'], axis=1, inplace=True)
-            self.save_model(train, target, team_id + '_' + str(hg) + '_flat')
-            self.logger.info("胜负模型训练完成")
+            self.save_model(train, target, f'{team_id}_{hg}_flat')
+            self.logger.info("Win/loss model training completed")
         except Exception as e:
-            self.logger.error(f"训练胜负模型失败: {str(e)}")
+            self.logger.error(f"Failed to train win/loss model: {e}")
             raise
 
     def train_ou(self, team_id, hg):
         """
-        训练大小模型
-        :param team_id: 队伍ID
-        :param hg: 0：主场，1：客场
+        Train the over/under model
+        :param team_id: Team ID
+        :param hg: 0: home, 1: away
         """
         try:
-            self.logger.info(f"开始训练大小模型 - 队伍ID: {team_id}, 主客场: {'主场' if hg == 0 else '客场'}")
-            game_list = self.list2str(self.cur.get_game_list(team_id, hg))  # 获取所有比赛ID
-            odd_df = self.get_label_odds(game_list, 'tmp.game_odds')  # 取出欧赔
-            ou_df = self.get_label_odds(game_list, 'tmp.game_overunder')  # 取出大小盘赔
-            result_df = self.get_result(game_list)  # 取出赛果
-            train = odd_df.join(ou_df).join(result_df)  # 整合赔率和赛果
+            self.logger.info(f"Start training over/under model - Team ID: {team_id}, Home/Away: {'Home' if hg == 0 else 'Away'}")
+            game_list = self.list2str(self.cur.get_game_list(team_id, hg))  # Get all game IDs
+            odd_df = self.get_label_odds(game_list, 'tmp.game_odds')  # Get European odds
+            ou_df = self.get_label_odds(game_list, 'tmp.game_overunder')  # Get over/under odds
+            result_df = self.get_result(game_list)  # Get game results
+            train = odd_df.join(ou_df).join(result_df)  # Integrate odds and results
             rows_before = len(train)
-            train.dropna(axis=0, how='any', inplace=True)  # 处理空值
+            train.dropna(axis=0, how='any', inplace=True)  # Handle null values
             rows_after = len(train)
             if rows_before > rows_after:
-                self.logger.info(f"删除了 {rows_before - rows_after} 行包含空值的数据")
+                self.logger.info(f"Deleted {rows_before - rows_after} rows containing null values")
 
             target = train['overunder']
             train.drop(['flat', 'overunder'], axis=1, inplace=True)
-            self.save_model(train, target, team_id + '_' + str(hg) + '_overunder')
-            self.logger.info("大小模型训练完成")
+            self.save_model(train, target, f'{team_id}_{hg}_overunder')
+            self.logger.info("Over/under model training completed")
         except Exception as e:
-            self.logger.error(f"训练大小模型失败: {str(e)}")
+            self.logger.error(f"Failed to train over/under model: {e}")
             raise
 
     def save_model(self, train, target, args):
         """
-        保存预测模型
-        :param train: 元数据DF
-        :param target: 结果集DF
-        :param args: 类型(19_0_flat：team_id,主客场,预测类型)
+        Save the prediction model
+        :param train: Metadata DataFrame
+        :param target: Result set DataFrame
+        :param args: Type (e.g., 19_0_flat: team_id, home/away, prediction type)
         """
         try:
-            self.logger.info(f"开始训练模型: {args}")
-            self.logger.info(f"训练样本数: {len(train)}, 特征数: {len(train.columns)}")
+            self.logger.info(f"Start training model: {args}")
+            self.logger.info(f"Number of training samples: {len(train)}, Number of features: {len(train.columns)}")
             x_train, x_test, y_train, y_test = train_test_split(
                 train.values, target,
                 test_size=MODEL['TEST_SIZE'],
                 random_state=MODEL['RANDOM_STATE']
             )
-            self.logger.info(f"训练集大小: {len(x_train)}, 测试集大小: {len(x_test)}")
+            self.logger.info(f"Training set size: {len(x_train)}, Test set size: {len(x_test)}")
 
             model = xgb.XGBClassifier(
                 max_depth=MODEL['MAX_DEPTH'],
@@ -110,93 +110,89 @@ class Predictor(object):
             )
             model.fit(x_train, y_train)
             test_score = model.score(x_test, y_test)
-            self.logger.info(f'模型测试得分: {test_score:.4f}')
+            self.logger.info(f'Model test score: {test_score:.4f}')
 
-            # 确保模型目录存在
+            # Ensure the model directory exists
             os.makedirs(self.model_dir, exist_ok=True)
             model_path = os.path.join(self.model_dir, f'{args}.model')
             joblib.dump(model, model_path)
-            self.logger.info(f"模型已保存到: {model_path}")
+            self.logger.info(f"Model saved to: {model_path}")
         except Exception as e:
-            self.logger.error(f"保存模型失败: {str(e)}")
+            self.logger.error(f"Failed to save model: {e}")
             raise
 
-    # 预测胜负
+    # Predict win/loss
     def predict_flat(self):
         try:
-            self.logger.info("开始预测胜负...")
-            labels = self.get_top10('tmp.game_odds')  # 获取TOP10赔率公司
+            self.logger.info("Start predicting win/loss...")
+            labels = self.get_top10('tmp.game_odds')  # Get TOP10 odds companies
             sql = "select * from tmp.game_odds where odd_comp in (%s) and cast(id as int)>1600000" % (",".join(labels))
-            test = self.get_data_df(sql, 'odds')  # 测试数据 - 修复缺失参数
-            self.logger.info(f"测试数据量: {len(test)}")
+            test = self.get_data_df(sql, 'odds', labels)  # Test data - fix missing parameter
+            self.logger.info(f"Test data size: {len(test)}")
             test.to_excel('test.xlsx')
 
             model_path = os.path.join(self.model_dir, '19_0_flat.model')
             if not os.path.exists(model_path):
-                raise FileNotFoundError(f"模型文件不存在: {model_path}")
-            model = joblib.load(model_path)  # 调用模型
+                raise FileNotFoundError(f"Model file not found: {model_path}")
+            model = joblib.load(model_path)  # Load model
             preds = model.predict(test.values)
-            self.logger.info(f"预测完成，结果数量: {len(preds)}")
+            self.logger.info(f"Prediction completed, number of results: {len(preds)}")
             print(preds)
             return preds
         except Exception as e:
-            self.logger.error(f"预测胜负失败: {str(e)}")
+            self.logger.error(f"Failed to predict win/loss: {e}")
             raise
 
-    # 预测大小
+    # Predict over/under
     def predict_overunder(self):
         try:
-            self.logger.info("开始预测大小...")
-            games = self.list2str(self.cur.get_game_list('19', 0))  # 获取所有比赛ID
-            game_str = []
-            for i in games.split(','):
-                if int(i.replace('\'', ''))>1500000:
-                    game_str.append(i)
+            self.logger.info("Start predicting over/under...")
+            games = self.cur.get_game_list('19', 0)  # Get all game IDs
+            game_str = [f"'{i}'" for i in games if int(i) > 1500000]
             game_list = ','.join(game_str)
-            self.logger.info(f"筛选后的比赛数量: {len(game_str)}")
+            self.logger.info(f"Number of filtered games: {len(game_str)}")
 
-            odd_df = self.get_label_odds(game_list, 'tmp.game_odds')  # 取出欧赔
-            ou_df = self.get_label_odds(game_list, 'tmp.game_overunder')  # 取出大小盘赔
+            odd_df = self.get_label_odds(game_list, 'tmp.game_odds')  # Get European odds
+            ou_df = self.get_label_odds(game_list, 'tmp.game_overunder')  # Get over/under odds
             test = odd_df.join(ou_df)
-            self.logger.info(f"测试数据量: {len(test)}")
+            self.logger.info(f"Test data size: {len(test)}")
             test.to_excel('test.xlsx')
 
             model_path = os.path.join(self.model_dir, '19_0_overunder.model')
             if not os.path.exists(model_path):
-                raise FileNotFoundError(f"模型文件不存在: {model_path}")
-            model = joblib.load(model_path)  # 调用模型
+                raise FileNotFoundError(f"Model file not found: {model_path}")
+            model = joblib.load(model_path)  # Load model
             preds = model.predict(test.values)
-            self.logger.info(f"预测完成，结果数量: {len(preds)}")
+            self.logger.info(f"Prediction completed, number of results: {len(preds)}")
             for i in preds:
                 print(i)
             return preds
         except Exception as e:
-            self.logger.error(f"预测大小失败: {str(e)}")
+            self.logger.error(f"Failed to predict over/under: {e}")
             raise
 
-    def get_data_df(self, sql, flag):
+    def get_data_df(self, sql, flag, columns):
         """
-        将结果List转为DataFrame
-        :param sql: SQL语句
-        :param flag: 预测类型（flat）
-        :return: 结果DataFrame
+        Convert the result List to a DataFrame
+        :param sql: SQL statement
+        :param flag: Prediction type (e.g., 'flat')
+        :return: Result DataFrame
         """
         data_list = self.cur.get_data_list(sql)
-        data_df = pd.DataFrame(data_list, columns=['id', 'company', 'f1', 'f2', 'f3', 'o1', 'o2', 'o3'])
+        data_df = pd.DataFrame(data_list, columns=columns)
         data_piv = pd.DataFrame(
-            pd.pivot(data_df, index='id', columns='company', values=['f1', 'f2', 'f3', 'o1', 'o2', 'o3']))  # 行列转换后聚合
-        col_lis = [name[0] + '_' + flag + '_' + name[1] for name in data_piv.columns]
+            pd.pivot_table(data_df, index='id', columns='company', values=['f1', 'f2', 'f3', 'o1', 'o2', 'o3']))  # Pivot and aggregate
+        col_lis = [f'{name[0]}_{flag}_{name[1]}' for name in data_piv.columns]
         data_piv.columns = col_lis
         return data_piv
 
     def get_result(self, game_list):
         """
-        取出赛果
-        :param game_list: 比赛ID
-        :return: 比赛结果DataFrame
+        Get game results
+        :param game_list: Game IDs
+        :return: Game result DataFrame
         """
-        sql = "select distinct id,%s,%s  from tmp.game_record where id in (%s)" \
-              % (self.flat_parse, self.overunder_parse, game_list)
+        sql = f"select distinct id,{self.flat_parse},{self.overunder_parse} from tmp.game_record where id in ({game_list})"
         result_list = self.cur.get_data_list(sql)
         result_df = pd.DataFrame(result_list, columns=['id', 'flat', 'overunder'])
         result_df.set_index(['id'], inplace=True)
@@ -205,46 +201,43 @@ class Predictor(object):
     @staticmethod
     def list2str(oList):
         """
-        获取比赛List
-        :param oList: ID数组
-        :return: 拼接后的ID字符串
+        Get game List
+        :param oList: ID array
+        :return: Concatenated ID string
         """
-        games = ",".join(["'" + i + "'" for i in oList])
-        return games
+        return ",".join([f"'{i}'" for i in oList])
 
     def get_top10(self, table_name):
         """
-        获取TOP10赔率公司
-        :param table_name: 表名（tmp.game_odds）
-        :return: TOP10公司名称列表（带引号）
+        Get TOP10 odds companies
+        :param table_name: table name (e.g., tmp.game_odds)
+        :return: TOP10 company name list (with quotes)
         """
-        labels = []
-        # 验证表名
+        # Validate table name
         allowed_tables = ['tmp.game_odds', 'tmp.game_overunder']
         if table_name not in allowed_tables:
             raise ValueError(f"Invalid table name: {table_name}")
 
         sql = f'select odd_comp from {table_name} group by odd_comp order by count(*) desc limit 10'
         top10 = self.cur.get_data_list(sql)
-        for row in top10:
-            labels.append("'" + row[0] + "'")
-        self.logger.info(f"获取到TOP10公司: {labels}")
+        labels = [f"'{row[0]}'" for row in top10]
+        self.logger.info(f"Get TOP10 companies: {labels}")
         return labels
 
     def get_label_odds(self, game_list, table_name):
         """
-        取出标签的赔率数据
-        :param game_list: 比赛List
-        :param table_name: 表名（tmp.game_odds）
-        :return: 赔率数据DataFrame
+        Get odds data for labels
+        :param game_list: Game List
+        :param table_name: table name (e.g., tmp.game_odds)
+        :return: Odds data DataFrame
         """
         flag = table_name.split('.')[1].split('_')[1]
-        # 提取top10赔率公司
+        # Extract top10 odds companies
         labels = self.get_top10(table_name)
-
-        # 取出标签的赔率数据
-        sql = "select * from %s where odd_comp in (%s) and id in(%s)" % (table_name, ",".join(labels), game_list)
-        data_df = self.get_data_df(sql, flag)
+        columns = ['id', 'company', 'f1', 'f2', 'f3', 'o1', 'o2', 'o3']
+        # Get odds data for labels
+        sql = f"select * from {table_name} where odd_comp in ({','.join(labels)}) and id in({game_list})"
+        data_df = self.get_data_df(sql, flag, columns)
         return data_df
 
 
